@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ngdemo17/bloc/my_feed_bloc.dart';
 import 'package:ngdemo17/bloc/home_bloc.dart';
 import 'package:ngdemo17/bloc/home_event.dart';
 import 'package:ngdemo17/bloc/home_state.dart';
+import 'package:ngdemo17/bloc/post_liked_bloc.dart';
 import 'package:ngdemo17/services/log_service.dart';
 import 'my_feed_page.dart';
 import 'my_likes_page.dart';
@@ -21,7 +23,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   PageController pageController = PageController();
   late HomeBloc homeBloc;
 
@@ -34,29 +35,38 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<HomeBloc, HomeState>(
-      listener: (context, state){
-          LogService.i(state.currentIndex.toString());
+      listener: (context, state) {
+        LogService.i(state.currentIndex.toString());
       },
-      builder: (context, state){
+      builder: (context, state) {
         return Scaffold(
           body: PageView(
             controller: pageController,
             children: [
-              MyFeedPage(pageController: pageController,),
+              MultiBlocProvider(
+                providers: [
+                  BlocProvider(create: (context) => MyFeedBloc(),),
+                  BlocProvider(create: (context) => PostLikedBloc(),),
+                ],
+                child: MyFeedPage(pageController: pageController,),
+              ),
               const MySearchPage(),
-              MyUploadPage(pageController: pageController,),
+              MyUploadPage(
+                pageController: pageController,
+              ),
               const MyLikesPage(),
               const MyProfilePage(),
             ],
-            onPageChanged: (int index){
+            onPageChanged: (int index) {
               homeBloc.add(PageViewEvent(currentIndex: index));
             },
           ),
-
           bottomNavigationBar: CupertinoTabBar(
-            onTap: (int index){
+            onTap: (int index) {
               homeBloc.add(BottomNavEvent(currentIndex: index));
-              pageController.animateToPage(index, duration: const Duration(milliseconds: 200), curve: Curves.easeIn);
+              pageController.animateToPage(index,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeIn);
             },
             currentIndex: state.currentIndex,
             activeColor: const Color.fromRGBO(193, 53, 132, 1),

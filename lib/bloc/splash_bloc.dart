@@ -14,11 +14,13 @@ import '../services/prefs_service.dart';
 
 class SplashBloc extends Bloc<SplashEvent, SplashState> {
   SplashBloc() : super(SplashInitialState()) {
-    on<SplashWaitEvent>((event, emit) async {
-      emit(SplashLoadingState());
-      await Future.delayed(const Duration(seconds: 2));
-      emit(SplashLoadedState());
-    });
+    on<SplashWaitEvent>(_onSplashWaitEvent);
+  }
+
+  Future<void> _onSplashWaitEvent(SplashWaitEvent event, Emitter<SplashState> emit) async {
+    emit(SplashLoadingState());
+    await Future.delayed(const Duration(seconds: 2));
+    emit(SplashLoadedState());
   }
 
   callNextPage(BuildContext context) {

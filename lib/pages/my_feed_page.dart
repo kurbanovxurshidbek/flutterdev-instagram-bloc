@@ -1,5 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ngdemo17/bloc/my_feed_bloc.dart';
+import 'package:ngdemo17/bloc/my_feed_event.dart';
+import 'package:ngdemo17/bloc/my_feed_state.dart';
+import 'package:ngdemo17/bloc/post_liked_bloc.dart';
+import 'package:ngdemo17/bloc/post_liked_event.dart';
+import 'package:ngdemo17/bloc/post_liked_state.dart';
 import '../model/post_model.dart';
 import '../services/db_service.dart';
 import '../services/utils_service.dart';
@@ -14,70 +21,49 @@ class MyFeedPage extends StatefulWidget {
 }
 
 class _MyFeedPageState extends State<MyFeedPage> {
-  bool isLoading = false;
-  List<Post> items = [];
 
-  void _apiPostLike(Post post) async {
-    setState(() {
-      isLoading = true;
-    });
+  late MyFeedBloc feedBloc;
 
-    await DBService.likePost(post, true);
-    setState(() {
-      isLoading = false;
-      post.liked = true;
-    });
-  }
-
-  void _apiPostUnLike(Post post) async {
-    setState(() {
-      isLoading = true;
-    });
-
-    await DBService.likePost(post, false);
-    setState(() {
-      isLoading = false;
-      post.liked = false;
-    });
-  }
-
-  _apiLoadFeeds() {
-    setState(() {
-      isLoading = true;
-    });
-    DBService.loadFeeds().then((value) => {
-          _resLoadFeeds(value),
-        });
-  }
-
-  _resLoadFeeds(List<Post> posts) {
-    setState(() {
-      items = posts;
-      isLoading = false;
-    });
-  }
-
-  _dialogRemovePost(Post post) async {
-    var result = await Utils.dialogCommon(context, "Instagram", "Do you want to detele this post?", false);
-
-    if (result) {
-      setState(() {
-        isLoading = true;
-      });
-      DBService.removePost(post).then((value) => {
-        _apiLoadFeeds(),
-      });
-    }
-  }
+  //
+  // _dialogRemovePost(Post post) async {
+  //   var result = await Utils.dialogCommon(context, "Instagram", "Do you want to detele this post?", false);
+  //
+  //   if (result) {
+  //     setState(() {
+  //       isLoading = true;
+  //     });
+  //     DBService.removePost(post).then((value) => {
+  //       _apiLoadFeeds(),
+  //     });
+  //   }
+  // }
 
   @override
   void initState() {
     super.initState();
-    _apiLoadFeeds();
+    feedBloc = context.read<MyFeedBloc>();
+    feedBloc.add(LoadFeedPostsEvent());
   }
 
   @override
   Widget build(BuildContext context) {
+    return BlocConsumer<MyFeedBloc, MyFeedState>(
+      listener: (context, state){
+
+      },
+      builder: (context, state){
+        if(state is MyFeedLoadingState){
+          return viewOfFeedPage(true,[]);
+        }
+        if(state is MyFeedSuccessState){
+          return viewOfFeedPage(false, state.items);
+        }
+        return viewOfFeedPage(false,[]);
+      },
+    );
+  }
+
+  Widget viewOfFeedPage(bool isLoading, List<Post> items){
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -91,11 +77,10 @@ class _MyFeedPageState extends State<MyFeedPage> {
         actions: [
           IconButton(
             onPressed: () {
-              widget.pageController!.animateToPage(2,
-                  duration: Duration(microseconds: 200), curve: Curves.easeIn);
+              widget.pageController!.animateToPage(2, duration: const Duration(microseconds: 200), curve: Curves.easeIn);
             },
-            icon: Icon(Icons.camera_alt),
-            color: Color.fromRGBO(193, 53, 132, 1),
+            icon: const Icon(Icons.camera_alt),
+            color: const Color.fromRGBO(193, 53, 132, 1),
           ),
         ],
       ),
@@ -109,8 +94,8 @@ class _MyFeedPageState extends State<MyFeedPage> {
           ),
           isLoading
               ? const Center(
-                  child: CircularProgressIndicator(),
-                )
+            child: CircularProgressIndicator(),
+          )
               : const SizedBox.shrink(),
         ],
       ),
@@ -173,7 +158,7 @@ class _MyFeedPageState extends State<MyFeedPage> {
                     ? IconButton(
                         icon: const Icon(Icons.more_horiz),
                         onPressed: () {
-                          _dialogRemovePost(post);
+                          //_dialogRemovePost(post);
                         },
                       )
                     : const SizedBox.shrink(),
@@ -202,20 +187,26 @@ class _MyFeedPageState extends State<MyFeedPage> {
                   IconButton(
                     onPressed: () {
                       if (!post.liked) {
-                        _apiPostLike(post);
+                        context.read<PostLikedBloc>().add(LikePostEvent(post: post));
                       } else {
-                        _apiPostUnLike(post);
+                        context.read<PostLikedBloc>().add(UnlikePostEvent(post: post));
                       }
                     },
-                    icon: post.liked
-                        ? const Icon(
-                            Icons.favorite,
-                            color: Colors.red,
-                          )
-                        : const Icon(
-                            Icons.favorite_border,
-                            color: Colors.black,
-                          ),
+                    icon: BlocBuilder<PostLikedBloc, PostLikedState>(
+                      builder: (context, state){
+
+                        return post.liked
+                            ? const Icon(
+                          Icons.favorite,
+                          color: Colors.red,
+                        )
+                            : const Icon(
+                          Icons.favorite_border,
+                          color: Colors.black,
+                        );
+
+                      },
+                    )
                   ),
                   IconButton(
                     onPressed: () {},
