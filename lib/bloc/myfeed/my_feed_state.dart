@@ -1,4 +1,4 @@
-import '../model/post_model.dart';
+import '../../model/post_model.dart';
 
 abstract class MyFeedState {}
 

@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 
-import '../services/db_service.dart';
+import '../../services/db_service.dart';
 import 'my_feed_event.dart';
 import 'my_feed_state.dart';
 

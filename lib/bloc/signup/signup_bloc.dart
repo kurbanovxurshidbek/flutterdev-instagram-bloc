@@ -2,21 +2,21 @@ import 'package:bloc/bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ngdemo17/bloc/signin_bloc.dart';
-import 'package:ngdemo17/bloc/signin_event.dart';
-import 'package:ngdemo17/bloc/signin_state.dart';
-import 'package:ngdemo17/bloc/signup_event.dart';
-import 'package:ngdemo17/bloc/signup_state.dart';
+import 'package:ngdemo17/bloc/signin/signin_bloc.dart';
+import 'package:ngdemo17/bloc/signin/signin_event.dart';
+import 'package:ngdemo17/bloc/signin/signin_state.dart';
+import 'package:ngdemo17/bloc/signup/signup_event.dart';
+import 'package:ngdemo17/bloc/signup/signup_state.dart';
 import 'package:ngdemo17/services/log_service.dart';
 
-import '../model/member_model.dart';
-import '../pages/home_page.dart';
-import '../pages/signin_page.dart';
-import '../pages/signup_page.dart';
-import '../services/auth_service.dart';
-import '../services/db_service.dart';
-import '../services/prefs_service.dart';
-import 'home_bloc.dart';
+import '../../model/member_model.dart';
+import '../../pages/home_page.dart';
+import '../../pages/signin_page.dart';
+import '../../pages/signup_page.dart';
+import '../../services/auth_service.dart';
+import '../../services/db_service.dart';
+import '../../services/prefs_service.dart';
+import '../home/home_bloc.dart';
 
 class SignUpBloc extends Bloc<SignUpEvent, SignUpState> {
   SignUpBloc() : super(SignUpInitialState()) {

@@ -1,16 +1,16 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ngdemo17/bloc/home_bloc.dart';
-import 'package:ngdemo17/bloc/signin_bloc.dart';
-import 'package:ngdemo17/bloc/splash_event.dart';
-import 'package:ngdemo17/bloc/splash_state.dart';
-import '../pages/home_page.dart';
-import '../pages/signin_page.dart';
-import '../services/auth_service.dart';
-import '../services/log_service.dart';
-import '../services/notif_service.dart';
-import '../services/prefs_service.dart';
+import 'package:ngdemo17/bloc/signin/signin_bloc.dart';
+import 'package:ngdemo17/bloc/splash/splash_event.dart';
+import 'package:ngdemo17/bloc/splash/splash_state.dart';
+import '../../pages/home_page.dart';
+import '../../pages/signin_page.dart';
+import '../../services/auth_service.dart';
+import '../../services/log_service.dart';
+import '../../services/notif_service.dart';
+import '../../services/prefs_service.dart';
+import '../home/home_bloc.dart';
 
 class SplashBloc extends Bloc<SplashEvent, SplashState> {
   SplashBloc() : super(SplashInitialState()) {

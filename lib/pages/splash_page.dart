@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ngdemo17/bloc/splash_event.dart';
-import 'package:ngdemo17/bloc/splash_state.dart';
-import '../bloc/splash_bloc.dart';
+import 'package:ngdemo17/bloc/splash/splash_event.dart';
+import '../bloc/splash/splash_bloc.dart';
+import '../bloc/splash/splash_state.dart';
 
 class SplashPage extends StatefulWidget {
   static const String id = "splash_page";

@@ -1,12 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ngdemo17/bloc/my_feed_bloc.dart';
-import 'package:ngdemo17/bloc/my_feed_event.dart';
-import 'package:ngdemo17/bloc/my_feed_state.dart';
-import 'package:ngdemo17/bloc/post_liked_bloc.dart';
-import 'package:ngdemo17/bloc/post_liked_event.dart';
-import 'package:ngdemo17/bloc/post_liked_state.dart';
+import 'package:ngdemo17/bloc/myfeed/my_feed_bloc.dart';
+import 'package:ngdemo17/bloc/myfeed/my_feed_event.dart';
+import 'package:ngdemo17/bloc/myfeed/my_feed_state.dart';
+import 'package:ngdemo17/bloc/myfeed/like_post_bloc.dart';
+import '../bloc/myfeed/like_post_event.dart';
+import '../bloc/myfeed/like_post_state.dart';
 import '../model/post_model.dart';
 import '../services/db_service.dart';
 import '../services/utils_service.dart';
@@ -187,14 +187,13 @@ class _MyFeedPageState extends State<MyFeedPage> {
                   IconButton(
                     onPressed: () {
                       if (!post.liked) {
-                        context.read<PostLikedBloc>().add(LikePostEvent(post: post));
+                        context.read<LikePostBloc>().add(LikePostEvent(post: post));
                       } else {
-                        context.read<PostLikedBloc>().add(UnlikePostEvent(post: post));
+                        context.read<LikePostBloc>().add(UnlikePostEvent(post: post));
                       }
                     },
-                    icon: BlocBuilder<PostLikedBloc, PostLikedState>(
+                    icon: BlocBuilder<LikePostBloc, LikeState>(
                       builder: (context, state){
-
                         return post.liked
                             ? const Icon(
                           Icons.favorite,
@@ -204,7 +203,6 @@ class _MyFeedPageState extends State<MyFeedPage> {
                           Icons.favorite_border,
                           color: Colors.black,
                         );
-
                       },
                     )
                   ),

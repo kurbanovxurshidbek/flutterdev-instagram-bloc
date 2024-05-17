@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ngdemo17/pages/signin_page.dart';
-import '../bloc/signin_bloc.dart';
+import '../bloc/signin/signin_bloc.dart';
 import '../model/member_model.dart';
 import '../model/post_model.dart';
 import '../services/auth_service.dart';

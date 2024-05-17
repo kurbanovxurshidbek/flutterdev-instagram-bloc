@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ngdemo17/bloc/signin_bloc.dart';
-import 'package:ngdemo17/bloc/signin_event.dart';
-import 'package:ngdemo17/bloc/signin_state.dart';
+import 'package:ngdemo17/bloc/signin/signin_bloc.dart';
+import 'package:ngdemo17/bloc/signin/signin_event.dart';
+import 'package:ngdemo17/bloc/signin/signin_state.dart';
 import '../services/utils_service.dart';
 
 class SignInPage extends StatefulWidget {
