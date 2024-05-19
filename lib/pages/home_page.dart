@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ngdemo17/bloc/myfeed/my_feed_bloc.dart';
 import 'package:ngdemo17/bloc/home/home_bloc.dart';
 import 'package:ngdemo17/bloc/home/home_state.dart';
+import 'package:ngdemo17/bloc/myliked/my_liked_bloc.dart';
 import 'package:ngdemo17/bloc/mysearch/follow_member_bloc.dart';
 import 'package:ngdemo17/bloc/mysearch/my_search_bloc.dart';
 import 'package:ngdemo17/bloc/myfeed/like_post_bloc.dart';
@@ -71,7 +72,11 @@ class _HomePageState extends State<HomePage> {
                 child: MyUploadPage(pageController: pageController,),
               ),
 
-              const MyLikesPage(),
+              BlocProvider(
+                create: (context) => MyLikedBloc(),
+                child: const MyLikesPage(),
+              ),
+
               const MyProfilePage(),
             ],
             onPageChanged: (int index) {

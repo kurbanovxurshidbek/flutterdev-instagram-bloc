@@ -1,5 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ngdemo17/bloc/myliked/my_liked_bloc.dart';
+import '../bloc/myliked/my_liked_event.dart';
+import '../bloc/myliked/my_liked_state.dart';
 import '../model/post_model.dart';
 import '../services/db_service.dart';
 import '../services/utils_service.dart';
@@ -12,55 +16,46 @@ class MyLikesPage extends StatefulWidget {
 }
 
 class _MyLikesPageState extends State<MyLikesPage> {
-  bool isLoading = false;
-  List<Post> items = [];
-
-  void _apiLoadLikes() {
-    setState(() {
-      isLoading = true;
-    });
-    DBService.loadLikes().then((value) => {
-      _resLoadPost(value),
-    });
-  }
-
-  void _resLoadPost(List<Post> posts) {
-    setState(() {
-      items = posts;
-      isLoading = false;
-    });
-  }
-
-  void _apiPostUnLike(Post post) async {
-    setState(() {
-      isLoading = true;
-    });
-
-    await DBService.likePost(post, false);
-    _apiLoadLikes();
-  }
+  late MyLikedBloc likedBloc;
 
   _dialogRemovePost(Post post) async {
     var result = await Utils.dialogCommon(context, "Instagram", "Do you want to detele this post?", false);
-
     if (result) {
-      setState(() {
-        isLoading = true;
-      });
-      DBService.removePost(post).then((value) => {
-        _apiLoadLikes(),
-      });
+      likedBloc.add(RemovePostEvent(post: post));
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _apiLoadLikes();
+    likedBloc = context.read<MyLikedBloc>();
+    likedBloc.add(LoadLikedPostsEvent());
   }
 
   @override
   Widget build(BuildContext context) {
+    return BlocConsumer<MyLikedBloc, MyLikedState>(
+      listener: (context, state){
+        if(state is UnLikePostSuccessState){
+          likedBloc.add(LoadLikedPostsEvent());
+        }
+        if(state is RemovePostSuccessState){
+          likedBloc.add(LoadLikedPostsEvent());
+        }
+      },
+      builder: (context, state){
+        if(state is MyLikedLoadingState){
+          return viewOfMyLikedPage(true,[]);
+        }
+        if(state is MyLikedSuccessState){
+          return viewOfMyLikedPage(false,state.items);
+        }
+        return viewOfMyLikedPage(false,[]);
+      },
+    );
+  }
+
+  Widget viewOfMyLikedPage(bool isLoading, List<Post> items){
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -173,7 +168,7 @@ class _MyLikesPageState extends State<MyLikesPage> {
                 children: [
                   IconButton(
                     onPressed: () {
-                      _apiPostUnLike(post);
+                      likedBloc.add(UnLikePostEvent(post: post));
                     },
                     icon: post.liked
                         ? const Icon(
