@@ -7,6 +7,8 @@ import 'package:ngdemo17/bloc/home/home_state.dart';
 import 'package:ngdemo17/bloc/mysearch/follow_member_bloc.dart';
 import 'package:ngdemo17/bloc/mysearch/my_search_bloc.dart';
 import 'package:ngdemo17/bloc/myfeed/like_post_bloc.dart';
+import 'package:ngdemo17/bloc/myupload/image_picker_bloc.dart';
+import 'package:ngdemo17/bloc/myupload/my_upload_bloc.dart';
 import 'package:ngdemo17/services/log_service.dart';
 import '../bloc/home/home_event.dart';
 import 'my_feed_page.dart';
@@ -61,9 +63,14 @@ class _HomePageState extends State<HomePage> {
                 child: const MySearchPage(),
               ),
 
-              MyUploadPage(
-                pageController: pageController,
+              MultiBlocProvider(
+                providers: [
+                  BlocProvider(create: (context) => MyUploadBloc(),),
+                  BlocProvider(create: (context) => ImagePickerBloc(),),
+                ],
+                child: MyUploadPage(pageController: pageController,),
               ),
+
               const MyLikesPage(),
               const MyProfilePage(),
             ],

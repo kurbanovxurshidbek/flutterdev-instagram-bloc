@@ -1,9 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import '../model/post_model.dart';
-import '../services/db_service.dart';
-import '../services/file_service.dart';
+import 'package:ngdemo17/bloc/myupload/image_picker_bloc.dart';
+import 'package:ngdemo17/bloc/myupload/my_upload_bloc.dart';
+import 'package:ngdemo17/bloc/myupload/my_upload_event.dart';
+import 'package:ngdemo17/bloc/myupload/my_upload_state.dart';
+import '../bloc/myupload/image_picker_event.dart';
+import '../bloc/myupload/image_picker_state.dart';
 
 class MyUploadPage extends StatefulWidget {
   final PageController? pageController;
@@ -15,35 +19,26 @@ class MyUploadPage extends StatefulWidget {
 }
 
 class _MyUploadPageState extends State<MyUploadPage> {
-  bool isLoading = false;
+  late MyUploadBloc uploadBloc;
+  late ImagePickerBloc pickerBloc;
+
+  var imagePicker = ImagePicker();
   var captionController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
-  File? _image;
 
   _moveToFeed() {
-    setState(() {
-      isLoading = false;
-    });
     captionController.text = "";
-    _image = null;
-    widget.pageController!.animateToPage(
-        0, duration: const Duration(microseconds: 200), curve: Curves.easeIn);
+    pickerBloc.add(ClearedPhotoEvent());
+    widget.pageController!.animateToPage(0, duration: const Duration(microseconds: 200), curve: Curves.easeIn);
   }
 
   _imgFromGallery() async {
-    XFile? image =
-    await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
-    setState(() {
-      _image = File(image!.path);
-    });
+    XFile? image = await imagePicker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+    pickerBloc.add(SelectedPhotoEvent(image: File(image!.path)));
   }
 
   _imgFromCamera() async {
-    XFile? image =
-    await _picker.pickImage(source: ImageSource.camera, imageQuality: 50);
-    setState(() {
-      _image = File(image!.path);
-    });
+    XFile? image = await imagePicker.pickImage(source: ImageSource.camera, imageQuality: 50);
+    pickerBloc.add(SelectedPhotoEvent(image: File(image!.path)));
   }
 
   void _showPicker(context) {
@@ -77,36 +72,38 @@ class _MyUploadPageState extends State<MyUploadPage> {
   _uploadNewPost() {
     String caption = captionController.text.toString().trim();
     if (caption.isEmpty) return;
-    if (_image == null) return;
-    _apiPostImage();
+    if (pickerBloc.image == null) return;
+    uploadBloc.add(UploadPostEvent(caption: caption, image: pickerBloc.image!));
   }
 
-  void _apiPostImage(){
-    setState(() {
-      isLoading = true;
-    });
-    FileService.uploadPostImage(_image!).then((downloadUrl) => {
-      _resPostImage(downloadUrl),
-    });
-  }
-
-  void _resPostImage(String downloadUrl){
-    String caption = captionController.text.toString().trim();
-    Post post = Post(caption, downloadUrl);
-    _apiStorePost(post);
-  }
-
-  void _apiStorePost(Post post)async{
-    // Post to posts
-    Post posted = await DBService.storePost(post);
-    // Post to feeds
-    DBService.storeFeed(posted).then((value) => {
-      _moveToFeed(),
-    });
+  @override
+  void initState() {
+    super.initState();
+    uploadBloc = context.read<MyUploadBloc>();
+    pickerBloc = context.read<ImagePickerBloc>();
   }
 
   @override
   Widget build(BuildContext context) {
+    return BlocConsumer<MyUploadBloc, MyUploadState>(
+      listener: (context, state) {
+        if (state is MyUploadSuccessState) {
+          _moveToFeed();
+        }
+      },
+      builder: (context, state) {
+        if (state is MyUploadLoadingState) {
+          return viewOfUploadPage(true);
+        }
+        if (state is MyUploadSuccessState) {
+          return viewOfUploadPage(false);
+        }
+        return viewOfUploadPage(false);
+      },
+    );
+  }
+
+  Widget viewOfUploadPage(bool isLoading) {
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -141,53 +138,58 @@ class _MyUploadPageState extends State<MyUploadPage> {
                       },
                       child: Container(
                         width: double.infinity,
-                        height: MediaQuery
-                            .of(context)
-                            .size
-                            .width,
+                        height: MediaQuery.of(context).size.width,
                         color: Colors.grey.withOpacity(0.4),
-                        child: _image == null
-                            ? const Center(
-                          child: Icon(
-                            Icons.add_a_photo,
-                            size: 50,
-                            color: Colors.grey,
-                          ),
-                        )
-                            : Stack(
-                          children: [
-                            Image.file(
-                              _image!,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                            Container(
-                              width: double.infinity,
-                              color: Colors.black12,
-                              padding: EdgeInsets.all(10),
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.end,
+                        child: BlocConsumer<ImagePickerBloc, PickerState>(
+                          listener: (context, state) {
+
+                          },
+                          builder: (context, state) {
+                            if (state is SelectedPhotoState) {
+                              return Stack(
                                 children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _image = null;
-                                      });
-                                    },
-                                    icon: const Icon(Icons.highlight_remove),
-                                    color: Colors.white,
+                                  Image.file(
+                                    pickerBloc.image!,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  Container(
+                                    width: double.infinity,
+                                    color: Colors.black12,
+                                    padding: const EdgeInsets.all(10),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        IconButton(
+                                          onPressed: () {
+                                            pickerBloc.add(ClearedPhotoEvent());
+                                          },
+                                          icon: const Icon(
+                                              Icons.highlight_remove),
+                                          color: Colors.white,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
+                              );
+                            }
+                            return const Center(
+                              child: Icon(
+                                Icons.add_a_photo,
+                                size: 50,
+                                color: Colors.grey,
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
                     ),
                     Container(
-                      margin: const EdgeInsets.only(left: 10, right: 10, top: 10),
+                      margin:
+                          const EdgeInsets.only(left: 10, right: 10, top: 10),
                       child: TextField(
                         controller: captionController,
                         style: const TextStyle(color: Colors.black),
@@ -197,7 +199,7 @@ class _MyUploadPageState extends State<MyUploadPage> {
                         decoration: const InputDecoration(
                             hintText: "Caption",
                             hintStyle:
-                            TextStyle(fontSize: 17, color: Colors.black38)),
+                                TextStyle(fontSize: 17, color: Colors.black38)),
                       ),
                     ),
                   ],
@@ -206,8 +208,8 @@ class _MyUploadPageState extends State<MyUploadPage> {
             ),
             isLoading
                 ? const Center(
-              child: CircularProgressIndicator(),
-            )
+                    child: CircularProgressIndicator(),
+                  )
                 : const SizedBox.shrink(),
           ],
         ));
