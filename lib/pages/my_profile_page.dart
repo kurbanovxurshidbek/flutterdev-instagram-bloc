@@ -3,7 +3,17 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ngdemo17/bloc/myprofile/axis_count_bloc.dart';
+import 'package:ngdemo17/bloc/myprofile/my_photo_bloc.dart';
+import 'package:ngdemo17/bloc/myprofile/my_photo_event.dart';
+import 'package:ngdemo17/bloc/myprofile/my_posts_bloc.dart';
+import 'package:ngdemo17/bloc/myprofile/my_posts_event.dart';
+import 'package:ngdemo17/bloc/myprofile/my_posts_state.dart';
+import 'package:ngdemo17/bloc/myprofile/my_profile_bloc.dart';
+import 'package:ngdemo17/bloc/myprofile/my_profile_state.dart';
 import 'package:ngdemo17/pages/signin_page.dart';
+import '../bloc/myprofile/my_photo_state.dart';
+import '../bloc/myprofile/my_profile_event.dart';
 import '../bloc/signin/signin_bloc.dart';
 import '../model/member_model.dart';
 import '../model/post_model.dart';
@@ -20,49 +30,19 @@ class MyProfilePage extends StatefulWidget {
 }
 
 class _MyProfilePageState extends State<MyProfilePage> {
-  bool isLoading = false;
-  int axisCount = 2;
-  List<Post> items = [];
-  File? _image;
-  String fullname = "", email = "", img_url = "";
-  int count_posts = 0, count_followers = 0, count_following = 0;
+  late MyProfileBloc profileBloc;
+  late MyPostsBloc postsBloc;
+  late MyPhotoBloc photoBloc;
   final ImagePicker _picker = ImagePicker();
 
   _imgFromGallery() async {
-    XFile? image =
-        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
-    print(image!.path.toString());
-    setState(() {
-      _image = File(image.path);
-    });
-    _apiChangePhoto();
+    XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+    photoBloc.add(UploadMyPhotoEvent(image: File(image!.path)));
   }
 
   _imgFromCamera() async {
-    XFile? image =
-        await _picker.pickImage(source: ImageSource.camera, imageQuality: 50);
-    print(image!.path.toString());
-    setState(() {
-      _image = File(image.path);
-    });
-    _apiChangePhoto();
-  }
-
-  _apiChangePhoto() {
-    if (_image == null) return;
-    setState(() {
-      isLoading = true;
-    });
-    FileService.uploadUserImage(_image!).then((downloadUrl) => {
-          _apiUpdateMember(downloadUrl),
-        });
-  }
-
-  _apiUpdateMember(String downloadUrl) async {
-    Member member = await DBService.loadMember();
-    member.img_url = downloadUrl;
-    await DBService.updateMember(member);
-    _apiLoadMember();
+    XFile? image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 50);
+    photoBloc.add(UploadMyPhotoEvent(image: File(image!.path)));
   }
 
   _showPicker(context) {
@@ -97,22 +77,13 @@ class _MyProfilePageState extends State<MyProfilePage> {
     var result = await Utils.dialogCommon(context, "Instagram", "Do you want to detele this post?", false);
 
     if (result) {
-      setState(() {
-        isLoading = true;
-      });
-      DBService.removePost(post).then((value) => {
-        _apiLoadPosts(),
-      });
+      postsBloc.add(RemoveMyPostEvent(post: post));
     }
   }
 
   _dialogLogout() async {
-    var result = await Utils.dialogCommon(
-        context, "Instagram", "Do you want to logout?", false);
+    var result = await Utils.dialogCommon(context, "Instagram", "Do you want to logout?", false);
     if (result) {
-      setState(() {
-        isLoading = true;
-      });
       _signOutUser();
     }
   }
@@ -128,49 +99,47 @@ class _MyProfilePageState extends State<MyProfilePage> {
             )));
   }
 
-  void _apiLoadMember() {
-    setState(() {
-      isLoading = true;
-    });
-    DBService.loadMember().then((value) => {
-          _showMemberInfo(value),
-        });
-  }
-
-  void _showMemberInfo(Member member) {
-    setState(() {
-      isLoading = false;
-      fullname = member.fullname;
-      email = member.email;
-      img_url = member.img_url;
-      count_following = member.following_count;
-      count_followers = member.followers_count;
-    });
-  }
-
-  _apiLoadPosts() {
-    DBService.loadPosts().then((value) => {
-      _resLoadPosts(value),
-    });
-  }
-
-  _resLoadPosts(List<Post> posts) {
-    setState(() {
-      isLoading = false;
-      items = posts;
-      count_posts = posts.length;
-    });
-  }
-
   @override
   void initState() {
     super.initState();
-    _apiLoadMember();
-    _apiLoadPosts();
+    profileBloc = context.read<MyProfileBloc>();
+    profileBloc.add(LoadProfileMemberEvent());
+
+    postsBloc = context.read<MyPostsBloc>();
+    postsBloc.add(LoadMyPostsEvent());
+    postsBloc.stream.listen((state) {
+      if(state is RemoveMyPostState){
+        postsBloc.add(LoadMyPostsEvent());
+      }
+    });
+
+    photoBloc = context.read<MyPhotoBloc>();
+    photoBloc.stream.listen((state) {
+      if(state is MyPhotoSuccessState){
+        profileBloc.add(LoadProfileMemberEvent());
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    return BlocConsumer<MyProfileBloc, MyProfileState>(
+      listener: (context, state){
+
+      },
+      builder: (context, state){
+        if(state is MyProfileLoadingState){
+          return viewOfMyProfilePage(true, Member("", ""));
+        }
+        if(state is MyProfileLoadMemberState){
+          return viewOfMyProfilePage(false, state.member);
+        }
+        return viewOfMyProfilePage(false, Member("", ""));
+      },
+    );
+  }
+
+  Widget viewOfMyProfilePage(bool isLoading, Member member){
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -216,20 +185,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(35),
-                              child: img_url.isEmpty
+                              child: member.img_url.isEmpty
                                   ? const Image(
-                                      image: AssetImage(
-                                          "assets/images/ic_person.png"),
-                                      width: 70,
-                                      height: 70,
-                                      fit: BoxFit.cover,
-                                    )
+                                image: AssetImage(
+                                    "assets/images/ic_person.png"),
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                              )
                                   : Image.network(
-                                      img_url,
-                                      width: 70,
-                                      height: 70,
-                                      fit: BoxFit.cover,
-                                    ),
+                                member.img_url,
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                           const SizedBox(
@@ -254,7 +223,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     height: 10,
                   ),
                   Text(
-                    fullname.toUpperCase(),
+                    member.fullname.toUpperCase(),
                     style: const TextStyle(
                         color: Colors.black,
                         fontSize: 16,
@@ -264,7 +233,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     height: 3,
                   ),
                   Text(
-                    email,
+                     member.email.toUpperCase(),
                     style: const TextStyle(
                         color: Colors.black54,
                         fontSize: 14,
@@ -281,13 +250,27 @@ class _MyProfilePageState extends State<MyProfilePage> {
                           child: Center(
                             child: Column(
                               children: [
-                                Text(
-                                  count_posts.toString(),
-                                  style: const TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
+                                BlocBuilder<MyPostsBloc, MyPostsState>(
+                                  builder: (context, state){
+                                    if(state is MyPostsSuccessState){
+                                      return Text(
+                                        state.items.length.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold),
+                                      );
+                                    }
+                                    return const Text(
+                                      "0",
+                                      style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold),
+                                    );
+                                  },
                                 ),
+
                                 const SizedBox(
                                   height: 3,
                                 ),
@@ -307,7 +290,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             child: Column(
                               children: [
                                 Text(
-                                  count_followers.toString(),
+                                  member.following_count.toString(),
                                   style: const TextStyle(
                                       color: Colors.black,
                                       fontSize: 16,
@@ -332,7 +315,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             child: Column(
                               children: [
                                 Text(
-                                  count_following.toString(),
+                                  member.followers_count.toString(),
                                   style: const TextStyle(
                                       color: Colors.black,
                                       fontSize: 16,
@@ -363,9 +346,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                         child: Center(
                           child: IconButton(
                             onPressed: () {
-                              setState(() {
-                                axisCount = 1;
-                              });
+                              context.read<AxisCountBloc>().add(AxisCountEvent(axisCount: 1));
                             },
                             icon: Icon(Icons.list_alt),
                           ),
@@ -375,9 +356,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                         child: Center(
                           child: IconButton(
                             onPressed: () {
-                              setState(() {
-                                axisCount = 2;
-                              });
+                              context.read<AxisCountBloc>().add(AxisCountEvent(axisCount: 2));
                             },
                             icon: const Icon(Icons.grid_view),
                           ),
@@ -387,16 +366,18 @@ class _MyProfilePageState extends State<MyProfilePage> {
                   ),
 
                   //#myposts
-                  Expanded(
-                    child: GridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: axisCount),
-                      itemCount: items.length,
-                      itemBuilder: (ctx, index) {
-                        return _itemOfPost(items[index]);
-                      },
-                    ),
+                  BlocConsumer<MyPostsBloc, MyPostsState>(
+                    listener: (context, state){
+
+                    },
+                    builder: (context, state){
+                      if(state is MyPostsSuccessState){
+                        return viewOfMyPosts(state.items);
+                      }
+                      return viewOfMyPosts([]);
+                    },
                   ),
+
                 ],
               ),
             ),
@@ -406,6 +387,23 @@ class _MyProfilePageState extends State<MyProfilePage> {
             ): const SizedBox.shrink(),
           ],
         ));
+  }
+
+  Widget viewOfMyPosts(List<Post> items){
+    return Expanded(
+      child: BlocBuilder<AxisCountBloc, int>(
+        builder: (context, state){
+          return GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: state),
+            itemCount: items.length,
+            itemBuilder: (ctx, index) {
+              return _itemOfPost(items[index]);
+            },
+          );
+        },
+      ),
+    );
   }
 
   Widget _itemOfPost(Post post) {

@@ -5,6 +5,10 @@ import 'package:ngdemo17/bloc/myfeed/my_feed_bloc.dart';
 import 'package:ngdemo17/bloc/home/home_bloc.dart';
 import 'package:ngdemo17/bloc/home/home_state.dart';
 import 'package:ngdemo17/bloc/myliked/my_liked_bloc.dart';
+import 'package:ngdemo17/bloc/myprofile/axis_count_bloc.dart';
+import 'package:ngdemo17/bloc/myprofile/my_photo_bloc.dart';
+import 'package:ngdemo17/bloc/myprofile/my_posts_bloc.dart';
+import 'package:ngdemo17/bloc/myprofile/my_profile_bloc.dart';
 import 'package:ngdemo17/bloc/mysearch/follow_member_bloc.dart';
 import 'package:ngdemo17/bloc/mysearch/my_search_bloc.dart';
 import 'package:ngdemo17/bloc/myfeed/like_post_bloc.dart';
@@ -77,7 +81,16 @@ class _HomePageState extends State<HomePage> {
                 child: const MyLikesPage(),
               ),
 
-              const MyProfilePage(),
+              MultiBlocProvider(
+                providers: [
+                  BlocProvider(create: (context) => MyProfileBloc(),),
+                  BlocProvider(create: (context) => MyPostsBloc(),),
+                  BlocProvider(create: (context) => AxisCountBloc(),),
+                  BlocProvider(create: (context) => MyPhotoBloc(),),
+                ],
+                child: const MyProfilePage(),
+              ),
+
             ],
             onPageChanged: (int index) {
               homeBloc.add(PageViewEvent(currentIndex: index));
