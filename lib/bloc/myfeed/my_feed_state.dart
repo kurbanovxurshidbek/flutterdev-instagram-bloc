@@ -17,3 +17,7 @@ class MyFeedFailureState extends MyFeedState {
 
   MyFeedFailureState(this.errorMessage);
 }
+
+class RemoveFeedPostState extends MyFeedState {
+  RemoveFeedPostState();
+}

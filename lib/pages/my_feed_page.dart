@@ -24,25 +24,24 @@ class _MyFeedPageState extends State<MyFeedPage> {
 
   late MyFeedBloc feedBloc;
 
-  //
-  // _dialogRemovePost(Post post) async {
-  //   var result = await Utils.dialogCommon(context, "Instagram", "Do you want to detele this post?", false);
-  //
-  //   if (result) {
-  //     setState(() {
-  //       isLoading = true;
-  //     });
-  //     DBService.removePost(post).then((value) => {
-  //       _apiLoadFeeds(),
-  //     });
-  //   }
-  // }
+  _dialogRemovePost(Post post) async {
+    var result = await Utils.dialogCommon(context, "Instagram", "Do you want to detele this post?", false);
+    if (result) {
+      feedBloc.add(RemoveFeedPostEvent(post: post));
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     feedBloc = context.read<MyFeedBloc>();
     feedBloc.add(LoadFeedPostsEvent());
+
+    feedBloc.stream.listen((state) {
+      if(state is RemoveFeedPostState){
+        feedBloc.add(LoadFeedPostsEvent());
+      }
+    });
   }
 
   @override
@@ -53,12 +52,12 @@ class _MyFeedPageState extends State<MyFeedPage> {
       },
       builder: (context, state){
         if(state is MyFeedLoadingState){
-          return viewOfFeedPage(true,[]);
+          return viewOfFeedPage(true,feedBloc.items);
         }
         if(state is MyFeedSuccessState){
           return viewOfFeedPage(false, state.items);
         }
-        return viewOfFeedPage(false,[]);
+        return viewOfFeedPage(false,feedBloc.items);
       },
     );
   }
@@ -158,7 +157,7 @@ class _MyFeedPageState extends State<MyFeedPage> {
                     ? IconButton(
                         icon: const Icon(Icons.more_horiz),
                         onPressed: () {
-                          //_dialogRemovePost(post);
+                          _dialogRemovePost(post);
                         },
                       )
                     : const SizedBox.shrink(),
